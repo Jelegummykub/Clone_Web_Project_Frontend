@@ -18,14 +18,18 @@
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "axios": "^1.7.7",
+    "chart.js": "^4.4.4",
     "cornerstone-core": "^2.6.1",
     "cornerstone-tools": "^6.0.10",
     "cornerstone-wado-image-loader": "^4.13.2",
     "dicom-parser": "^1.8.21",
     "jquery": "^3.7.1",
     "papaparse": "^5.4.1",
+    "plotly.js": "^2.35.2",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
+    "react-plotly.js": "^2.6.0",
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
