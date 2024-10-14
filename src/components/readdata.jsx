@@ -17,6 +17,8 @@ function Readdata() {
     const [csvData, setCsvData] = useState([])
     const [openFolders, setOpenFolders] = useState({})
     const [chartData, setChartData] = useState({})
+    const [page, setpage] = useState(0)
+    const rowpage = 15;
 
     useEffect(() => {
         cornerstoneWADOImageLoader.external.cornerstone = cornerstone
@@ -126,9 +128,9 @@ function Readdata() {
             // console.log(headers)
 
             headers.forEach(header => {
-                const values = csvData.map(row => row[header]);
+                const values = csvData.map(row => row[header])
                 const numericValues = values.filter(value => !isNaN(parseFloat(value)) && isFinite(value))
-                console.log(values.length)
+                // console.log(values.length)
                 // console.log(!isNumeric)
                 if (values.length - 1 > 10) {
                     if (!numericValues.length && values.length) {
@@ -141,6 +143,7 @@ function Readdata() {
                             acc[value] = (acc[value] || 0) + 1;
                             return acc;
                         }, {});
+                        // console.log(counts)
 
                         newChartData[header] = {
                             type: 'chart',
@@ -159,17 +162,80 @@ function Readdata() {
                     }
                 }
 
+                if (values.length - 1 > 100) {
+                    if (numericValues.length && values.length) {
+                        const binSize = Math.ceil((Math.max(...numericValues.map(Number)) - Math.min(...numericValues.map(Number))) / 10)
+                        // console.log(binSize)
+                        const bins = {}
+                        numericValues.forEach(value => {
+                            const binIndex = Math.floor(Number(value) / binSize) * binSize
+                            bins[binIndex] = (bins[binIndex] || 0) + 1
+                        })
+
+                        newChartData[header] = {
+                            type: 'chart',
+                            labels: Object.keys(bins).map(bin => `${bin}-${Number(bin) + binSize}`),
+                            datasets: [{
+                                label: header,
+                                data: Object.values(bins),
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            }]
+                        }
+                    } else {
+                        const counts = values.reduce((acc, value) => {
+                            acc[value] = (acc[value] || 0) + 1;
+                            return acc;
+                        }, {});
+
+                        const sortedCounts = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                        const totalCount = values.length - 1;
+
+                        let stringData = sortedCounts.slice(0, 2).map(([label, count]) => ({
+                            label,
+                            count,
+                            percentage: ((count / totalCount) * 100).toFixed(0)
+                        }));
+                        console.log(sortedCounts.length)
+                        const otherCount = totalCount - stringData.reduce((sum, item) => sum + item.count, 0);
+                        if (otherCount > 0) {
+                            stringData.push({
+                                label: `Other (${otherCount})`,
+                                count: otherCount,
+                                percentage: ((otherCount / totalCount) * 100).toFixed(0)
+                            });
+                        }
+
+                        newChartData[header] = {
+                            type: 'string',
+                            stringData
+                        };
+                    }
+                }
+
             });
 
             setChartData(newChartData);
         }
-    }, [csvData]);
+    }, [csvData, page]);
 
+    const handleNextPage = () => {
+        if ((page + 1) * rowpage < csvData.length) {
+            setpage(page + 1);
+        }
+    }
+
+    const handlePreviousPage = () => {
+        if (page > 0) {
+            setpage(page - 1);
+        }
+    }
 
 
     const renderCSVData = () => {
         if (csvData.length === 0) return null;
-
+        const startpage = page * rowpage
+        const endpage = startpage + rowpage
+        const paginatedData = csvData.slice(startpage, endpage)
         const options = {
             responsive: true,
             maintainAspectRatio: false,
@@ -213,6 +279,16 @@ function Readdata() {
                                         <div className="h-32">
                                             <Bar options={options} data={chartData[header]} />
                                         </div>
+                                    ) : chartData[header]?.type === 'string' ? (
+                                        <div className="h-32 flex items-center justify-center">
+                                            <ul>
+                                                {chartData[header].stringData.map((item, i) => (
+                                                    <li key={i} className='font-bold'>
+                                                        {item.label}: {item.percentage} %
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     ) : (
                                         <div className="h-32 flex items-center justify-center">
                                             <span className="text-lg">Data column</span>
@@ -221,7 +297,7 @@ function Readdata() {
                                 </td>
                             ))}
                         </tr>
-                        {csvData.map((row, rowIndex) => (
+                        {paginatedData.map((row, rowIndex) => (
                             <tr key={rowIndex}>
                                 {Object.values(row).map((cell, cellIndex) => (
                                     <td key={cellIndex} className="border px-4 py-2">{cell}</td>
@@ -230,6 +306,15 @@ function Readdata() {
                         ))}
                     </tbody>
                 </table>
+                <div className='flex justify-between mt-4'>
+                    <button className='btn btn-outline btn-info' onClick={handlePreviousPage}>
+                        Previous Page
+                    </button>
+                    <button className="btn btn-outline btn-info" onClick={handleNextPage} disabled={(page + 1) * rowpage >= csvData.length}>
+                        Next Page
+                    </button>
+                </div>
+
             </div>
         );
     };
