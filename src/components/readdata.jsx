@@ -130,7 +130,7 @@ function Readdata() {
             headers.forEach(header => {
                 const values = csvData.map(row => row[header])
                 const numericValues = values.filter(value => !isNaN(parseFloat(value)) && isFinite(value))
-                // console.log(values.length)
+                // console.log(values.length - 1)
                 // console.log(!isNumeric)
                 if (values.length - 1 > 10) {
                     if (!numericValues.length && values.length) {
@@ -164,17 +164,26 @@ function Readdata() {
 
                 if (values.length - 1 > 100) {
                     if (numericValues.length && values.length) {
-                        const binSize = Math.ceil((Math.max(...numericValues.map(Number)) - Math.min(...numericValues.map(Number))) / 10)
+                        const maxvalue = Math.max(...numericValues.map(Number))
+                        const minvalue = Math.min(...numericValues.map(Number))
+                        // console.log(minvalue)
+
+                        const binSize = Math.ceil((maxvalue - minvalue) / 10)
+                        // console.log(binSize)
                         // console.log(binSize)
                         const bins = {}
                         numericValues.forEach(value => {
-                            const binIndex = Math.floor(Number(value) / binSize) * binSize
+                            const binIndex = Math.floor((Number(value) - minvalue) / binSize) * binSize + minvalue
+                            console.log(binIndex)
                             bins[binIndex] = (bins[binIndex] || 0) + 1
+                            // console.log(binIndex)
                         })
 
                         newChartData[header] = {
                             type: 'chart',
-                            labels: Object.keys(bins).map(bin => `${bin}-${Number(bin) + binSize}`),
+                            labels: Object.keys(bins).map(bin => {
+                                return `${Number(bin)}-${Number(bin) + binSize}`;
+                            }),
                             datasets: [{
                                 label: header,
                                 data: Object.values(bins),
@@ -195,7 +204,7 @@ function Readdata() {
                             count,
                             percentage: ((count / totalCount) * 100).toFixed(0)
                         }));
-                        console.log(sortedCounts.length)
+                        // console.log(sortedCounts.length)
                         const otherCount = totalCount - stringData.reduce((sum, item) => sum + item.count, 0);
                         if (otherCount > 0) {
                             stringData.push({
